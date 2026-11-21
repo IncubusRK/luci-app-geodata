@@ -103,8 +103,7 @@ return view.extend({
 			return;
 
 		const self = this;
-		this._pollStarted = Date.now();
-		this._pollFn = poll.add(function() {
+		const fn = function() {
 			return callStatus().then(function(st) {
 				self.updatePage(st);
 
@@ -116,11 +115,17 @@ return view.extend({
 				if (!job && Date.now() - self._pollStarted < 15000)
 					return;
 
-				poll.remove(self._pollFn);
+				poll.remove(fn);
 				self._pollFn = null;
 				self.notifyJobDone(st);
 			}).catch(function() {});
-		}, 2);
+		};
+
+		this._pollStarted = Date.now();
+		this._pollFn = fn;
+		// poll.add() only returns a boolean, the function handle is kept
+		// above so that poll.remove() can be called later.
+		poll.add(fn, 2);
 	},
 
 	notifyJobDone: function(st) {
