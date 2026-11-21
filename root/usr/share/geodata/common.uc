@@ -236,14 +236,39 @@ export function sanity_check(path) {
 	return { ok: true, code: code };
 }
 
-// xray_core init script state (from luci-app-xray).
+// xray init scripts, in priority order: luci-app-xray's xray_core and the
+// xray-core package's own init. Both may be installed side by side and both
+// read the same geodata files (via the /usr/share/xray -> ../v2ray symlinks),
+// so the state is aggregated and "init" names the running one.
+export const XRAY_INITS = [ '/etc/init.d/xray_core', '/etc/init.d/xray' ];
+
 export function xray_state() {
-	let installed = access('/etc/init.d/xray_core', 'x');
-	return {
-		installed: !!installed,
-		enabled:   !!(installed && system([ '/etc/init.d/xray_core', 'enabled' ]) == 0),
-		running:   !!(installed && system([ '/etc/init.d/xray_core', 'running' ]) == 0)
+	let st = {
+		installed: false,
+		enabled:   false,
+		running:   false,
+		init:      null,
+		inits:     {}
 	};
+
+	for (let init in XRAY_INITS) {
+		let inst = !!access(init, 'x');
+		let en   = !!(inst && system([ init, 'enabled' ]) == 0);
+		let run  = !!(inst && system([ init, 'running' ]) == 0);
+
+		st.inits[init] = { installed: inst, enabled: en, running: run };
+
+		if (inst)
+			st.installed = true;
+		if (en)
+			st.enabled = true;
+		if (run) {
+			st.running = true;
+			st.init = init;
+		}
+	}
+
+	return st;
 }
 
 export function read_state() {

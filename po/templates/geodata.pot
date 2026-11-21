@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luci-app-geodata\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 23:48+0300\n"
+"POT-Creation-Date: 2026-11-21 23:55+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -67,7 +67,7 @@ msgid ""
 "geosite.dat."
 msgstr ""
 
-#: htdocs/luci-static/resources/view/geodata/settings.js:51 htdocs/luci-static/resources/view/geodata/status.js:307
+#: htdocs/luci-static/resources/view/geodata/settings.js:51 htdocs/luci-static/resources/view/geodata/status.js:311
 msgid "Automatic updates"
 msgstr ""
 
@@ -242,11 +242,11 @@ msgid "Update finished with errors."
 msgstr ""
 
 #: htdocs/luci-static/resources/view/geodata/status.js:146 htdocs/luci-static/resources/view/geodata/status.js:250
-msgid "xray_core was restarted."
+msgid "xray was restarted."
 msgstr ""
 
 #: htdocs/luci-static/resources/view/geodata/status.js:147 htdocs/luci-static/resources/view/geodata/status.js:251
-msgid "xray_core was not restarted (it is not running)."
+msgid "xray was not restarted (it is not running)."
 msgstr ""
 
 #: htdocs/luci-static/resources/view/geodata/status.js:155 htdocs/luci-static/resources/view/geodata/status.js:223
@@ -331,53 +331,53 @@ msgstr ""
 msgid "Download URLs:"
 msgstr ""
 
-#: htdocs/luci-static/resources/view/geodata/status.js:292
+#: htdocs/luci-static/resources/view/geodata/status.js:293
 msgid "Service status"
 msgstr ""
 
-#: htdocs/luci-static/resources/view/geodata/status.js:295
+#: htdocs/luci-static/resources/view/geodata/status.js:298
 msgid "installed"
 msgstr ""
 
-#: htdocs/luci-static/resources/view/geodata/status.js:295
+#: htdocs/luci-static/resources/view/geodata/status.js:298
 msgid "not installed"
 msgstr ""
 
-#: htdocs/luci-static/resources/view/geodata/status.js:296
+#: htdocs/luci-static/resources/view/geodata/status.js:299
 msgid "enabled"
 msgstr ""
 
-#: htdocs/luci-static/resources/view/geodata/status.js:296
+#: htdocs/luci-static/resources/view/geodata/status.js:299
 msgid "disabled"
 msgstr ""
 
-#: htdocs/luci-static/resources/view/geodata/status.js:297
+#: htdocs/luci-static/resources/view/geodata/status.js:300
 msgid "running"
 msgstr ""
 
-#: htdocs/luci-static/resources/view/geodata/status.js:297
+#: htdocs/luci-static/resources/view/geodata/status.js:300
 msgid "stopped"
 msgstr ""
 
-#: htdocs/luci-static/resources/view/geodata/status.js:300
+#: htdocs/luci-static/resources/view/geodata/status.js:304
 msgid ""
-"xray_core is restarted automatically after an update only if it is running. An enabled but stopped service is not "
-"started."
+"The running xray service (xray_core or xray) is restarted automatically after an update. An enabled but stopped "
+"service is not started."
 msgstr ""
 
-#: htdocs/luci-static/resources/view/geodata/status.js:302
+#: htdocs/luci-static/resources/view/geodata/status.js:306
 msgid ""
 "If you use OpenClash, note that it keeps its own geodata copies; update them separately in the OpenClash settings."
 msgstr ""
 
-#: htdocs/luci-static/resources/view/geodata/status.js:309
+#: htdocs/luci-static/resources/view/geodata/status.js:313
 msgid "Scheduled (cron): "
 msgstr ""
 
-#: htdocs/luci-static/resources/view/geodata/status.js:310
+#: htdocs/luci-static/resources/view/geodata/status.js:314
 msgid "Not scheduled. Enable automatic updates on the Settings page."
 msgstr ""
 
-#: htdocs/luci-static/resources/view/geodata/status.js:313
+#: htdocs/luci-static/resources/view/geodata/status.js:317
 msgid "The cron daemon is not running; enable the cron service for scheduled updates."
 msgstr ""

@@ -13,8 +13,9 @@
 // Progress/results are published in /var/run/geodata-update.json, which the
 // rpcd "status" method exposes to the UI.
 //
-// xray_core is restarted only if it is currently running; an enabled-but-
-// stopped service is NOT started (safe-defaults policy).
+// The running xray service (xray_core from luci-app-xray or the xray-core
+// package's own init) is restarted after an update; an enabled-but-stopped
+// service is NOT started (safe-defaults policy).
 
 'use strict';
 
@@ -164,17 +165,17 @@ for (let name in files) {
 	log(name + ': updated, sha256 ' + hash);
 }
 
-// Restart xray_core only when it is running. Do not start a stopped service
+// Restart the running xray service only. Do not start a stopped service
 // even if it is enabled (safe-defaults: transparent proxies stay off until
 // the user turns them on).
 let xr = xray_state();
 let restarted = false;
-if (xr.running) {
-	restarted = (system([ '/etc/init.d/xray_core', 'restart' ], 120000) == 0);
-	log('xray_core restart ' + (restarted ? 'ok' : 'failed'));
+if (xr.running && xr.init) {
+	restarted = (system([ xr.init, 'restart' ], 120000) == 0);
+	log(xr.init + ' restart ' + (restarted ? 'ok' : 'failed'));
 }
 else if (xr.enabled) {
-	log('xray_core enabled but not running, not starting it');
+	log('xray is enabled but not running, not starting it');
 }
 
 state.running = false;

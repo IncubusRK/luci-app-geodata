@@ -143,8 +143,8 @@ return view.extend({
 		let msg = ok ? _('Update finished successfully.') : _('Update finished with errors.');
 		if (ok)
 			msg += ' ' + (job.xray_restarted
-				? _('xray_core was restarted.')
-				: _('xray_core was not restarted (it is not running).'));
+				? _('xray was restarted.')
+				: _('xray was not restarted (it is not running).'));
 		ui.addNotification(null, E('p', msg), ok ? 'info' : 'warning');
 	},
 
@@ -247,8 +247,8 @@ return view.extend({
 			]),
 			E('table', { 'class': 'table' }, rows),
 			E('p', {}, job.xray_restarted
-				? _('xray_core was restarted.')
-				: _('xray_core was not restarted (it is not running).'))
+				? _('xray was restarted.')
+				: _('xray was not restarted (it is not running).'))
 		]));
 
 		return nodes;
@@ -288,19 +288,23 @@ return view.extend({
 		]));
 
 		const xr = st.xray || {};
-		nodes.push(E('div', { 'class': 'cbi-section' }, [
-			E('h3', _('Service status')),
-			E('p', {}, [
-				'xray_core: ',
-				xr.installed ? _('installed') : _('not installed'), ', ',
-				xr.enabled ? _('enabled') : _('disabled'), ', ',
-				xr.running ? _('running') : _('stopped')
-			]),
-			E('p', { 'class': 'cbi-section-descr' },
-				_('xray_core is restarted automatically after an update only if it is running. An enabled but stopped service is not started.')),
-			E('p', { 'class': 'cbi-section-descr' },
-				_('If you use OpenClash, note that it keeps its own geodata copies; update them separately in the OpenClash settings.'))
-		]));
+		const xrInits = xr.inits || { '/etc/init.d/xray_core': xr };
+
+		const svcNodes = [ E('h3', _('Service status')) ];
+		for (const init in xrInits) {
+			const xs = xrInits[init] || {};
+			svcNodes.push(E('p', {}, [
+				init + ': ',
+				xs.installed ? _('installed') : _('not installed'), ', ',
+				xs.enabled ? _('enabled') : _('disabled'), ', ',
+				xs.running ? _('running') : _('stopped')
+			]));
+		}
+		svcNodes.push(E('p', { 'class': 'cbi-section-descr' },
+			_('The running xray service (xray_core or xray) is restarted automatically after an update. An enabled but stopped service is not started.')));
+		svcNodes.push(E('p', { 'class': 'cbi-section-descr' },
+			_('If you use OpenClash, note that it keeps its own geodata copies; update them separately in the OpenClash settings.')));
+		nodes.push(E('div', { 'class': 'cbi-section' }, svcNodes));
 
 		const cron = st.cron || {};
 		nodes.push(E('div', { 'class': 'cbi-section' }, [
