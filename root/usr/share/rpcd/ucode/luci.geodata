@@ -1,0 +1,152 @@
+#!/usr/bin/ucode
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 IncubusRK
+//
+// rpcd ucode plugin for luci-app-geodata.
+//
+// Registered automatically by rpcd-mod-ucode, which loads every regular file
+// from /usr/share/rpcd/ucode (that is RPC_UCSCRIPT_DIRECTORY in rpcd's
+// ucode.c). Executable plugins live in /usr/libexec/rpcd and are unrelated.
+// The returned object name becomes the ubus service:
+//
+//   ubus -v list luci.geodata
+//   ubus call luci.geodata status
+//   ubus call luci.geodata update '{"files":"all"}'
+//   ubus call luci.geodata sync_cron
+//
+// "update" spawns the detached worker /usr/libexec/geodata-update and
+// returns immediately: rpcd has a 30s request timeout, while downloading
+// geodata (up to ~89 MB) can take much longer. The UI polls "status" and
+// reads the job state published by the worker.
+
+'use strict';
+
+import { access, chmod, readfile, rename, unlink, writefile } from 'fs';
+import { cursor } from 'uci';
+import {
+	GEOIP_PATH, GEOSITE_PATH, CRONTAB, CRON_MARKER, WORKER,
+	resolve_urls, file_info, xray_state, read_state, pid_alive,
+	cron_status, uci_bool, cron_field
+} from '/usr/share/geodata/common.uc';
+
+const methods = {
+	status: {
+		call: function(request) {
+			let c = cursor();
+			c.load('geodata');
+			let source = c.get('geodata', 'config', 'source') || 'loyalsoldier';
+			let custom_geoip = c.get('geodata', 'config', 'custom_geoip_url') || '';
+			let custom_geosite = c.get('geodata', 'config', 'custom_geosite_url') || '';
+			c.unload();
+
+			let resolved = resolve_urls(source, custom_geoip, custom_geosite);
+
+			let job = read_state();
+			if (job && job.running && !pid_alive(job.pid)) {
+				// Worker died without publishing a final state.
+				job.running = false;
+				job.error = 'worker_died';
+			}
+
+			return {
+				source: source,
+				custom_geoip_url: custom_geoip,
+				custom_geosite_url: custom_geosite,
+				urls: resolved.urls,
+				url_error: resolved.error,
+				warnings: resolved.warnings,
+				files: {
+					geoip: file_info(GEOIP_PATH),
+					geosite: file_info(GEOSITE_PATH)
+				},
+				xray: xray_state(),
+				cron: cron_status(),
+				job: job
+			};
+		}
+	},
+
+	update: {
+		args: { files: 'string' },
+		call: function(request) {
+			let files = request.args?.files || 'all';
+			if (index([ 'all', 'geoip', 'geosite' ], files) < 0)
+				return { error: 'invalid_files' };
+
+			let job = read_state();
+			if (job && job.running && pid_alive(job.pid))
+				return { error: 'already_running' };
+
+			if (!access(WORKER, 'x'))
+				return { error: 'worker_missing' };
+
+			// Detach the worker. The shell command is a fixed constant;
+			// the (allowlisted) selection is passed as a positional
+			// argument via "$@", never interpolated into the command.
+			let rc = system([
+				'/bin/sh', '-c',
+				'exec /usr/bin/ucode ' + WORKER + ' "$@" >/dev/null 2>&1 </dev/null &',
+				'geodata-spawn', files
+			]);
+			if (rc != 0)
+				return { error: 'spawn_failed' };
+
+			return { started: true, files: files };
+		}
+	},
+
+	sync_cron: {
+		call: function(request) {
+			let c = cursor();
+			c.load('geodata');
+			let enabled = uci_bool(c.get('geodata', 'config', 'auto_update'));
+			let mode = c.get('geodata', 'config', 'auto_update_mode') || 'daily';
+			let minute = cron_field(c.get('geodata', 'config', 'auto_update_minute'), 0, 59, 0);
+			let hour = cron_field(c.get('geodata', 'config', 'auto_update_hour'), 0, 23, 4);
+			let wday = cron_field(c.get('geodata', 'config', 'auto_update_weekday'), 0, 7, 0);
+			c.unload();
+
+			if (mode != 'daily' && mode != 'weekly')
+				mode = 'daily';
+
+			// Every interpolated value is a validated integer or a
+			// constant, so no UCI input can reach the crontab unescaped.
+			let dow = (mode == 'weekly') ? wday : '*';
+			let body = sprintf('%d %d * * %s %s all', minute, hour, dow, WORKER);
+
+			let content = readfile(CRONTAB) || '';
+			let lines = [];
+			for (let l in split(content, '\n')) {
+				if (index(l, CRON_MARKER) >= 0)
+					continue;
+				push(lines, l);
+			}
+			while (length(lines) > 0 && lines[length(lines) - 1] == '')
+				pop(lines);
+
+			if (enabled)
+				push(lines, body + ' # ' + CRON_MARKER);
+
+			let tmp = CRONTAB + '.tmp';
+			if (!writefile(tmp, join('\n', lines) + '\n')) {
+				unlink(tmp);
+				return { error: 'write_failed' };
+			}
+			if (!rename(tmp, CRONTAB)) {
+				unlink(tmp);
+				return { error: 'write_failed' };
+			}
+			chmod(CRONTAB, 0600);
+
+			// Reload the cron daemon only if it is enabled; do not start
+			// a disabled service.
+			if (access('/etc/init.d/cron', 'x') &&
+			    system([ '/etc/init.d/cron', 'enabled' ]) == 0)
+				system([ '/etc/init.d/cron', 'reload' ], 30000);
+
+			return { ok: true, enabled: enabled, line: enabled ? body : null };
+		}
+	}
+};
+
+return { 'luci.geodata': methods };

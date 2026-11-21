@@ -1,0 +1,29 @@
+{
+	"admin/services/geodata": {
+		"title": "Geodata",
+		"order": 45,
+		"action": {
+			"type": "firstchild"
+		},
+		"depends": {
+			"acl": [ "luci-app-geodata" ],
+			"uci": { "geodata": true }
+		}
+	},
+	"admin/services/geodata/status": {
+		"title": "Status",
+		"order": 1,
+		"action": {
+			"type": "view",
+			"path": "geodata/status"
+		}
+	},
+	"admin/services/geodata/settings": {
+		"title": "Settings",
+		"order": 2,
+		"action": {
+			"type": "view",
+			"path": "geodata/settings"
+		}
+	}
+}

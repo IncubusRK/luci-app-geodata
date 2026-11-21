@@ -1,0 +1,187 @@
+#!/usr/bin/ucode
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 IncubusRK
+//
+// Geodata update worker for luci-app-geodata.
+//
+// Usage: /usr/libexec/geodata-update [all|geoip|geosite]
+//
+// Runs detached from rpcd (which has a 30s request timeout) and from cron.
+// Downloads the configured geodata files with uclient-fetch into a temporary
+// file next to the target, performs a basic protobuf sanity check, computes
+// sha256 and atomically replaces the target (rename on the same filesystem).
+// Progress/results are published in /var/run/geodata-update.json, which the
+// rpcd "status" method exposes to the UI.
+//
+// xray_core is restarted only if it is currently running; an enabled-but-
+// stopped service is NOT started (safe-defaults policy).
+
+'use strict';
+
+import { readlink, rename, stat, unlink } from 'fs';
+import { cursor } from 'uci';
+import {
+	GEOIP_PATH, GEOSITE_PATH, WORKER,
+	resolve_urls, sha256_file, cache_hash, sanity_check,
+	xray_state, read_state, write_state, pid_alive
+} from '/usr/share/geodata/common.uc';
+
+const DOWNLOAD_TIMEOUT_MS = 600000;  // 10 minutes per file (89 MB geosite)
+const FETCH_NET_TIMEOUT_S = 120;     // uclient-fetch network timeout
+
+function log(msg) {
+	system([ 'logger', '-t', 'geodata', '--', msg ]);
+}
+
+function usage() {
+	printf('Usage: %s [all|geoip|geosite]\n', WORKER);
+	exit(1);
+}
+
+let arg = (length(ARGV) > 0 ? ARGV[0] : 'all');
+let files;
+switch (arg) {
+case 'all':     files = [ 'geoip', 'geosite' ]; break;
+case 'geoip':   files = [ 'geoip' ]; break;
+case 'geosite': files = [ 'geosite' ]; break;
+default:
+	usage();
+}
+
+// Refuse to run twice concurrently (state file + live pid check).
+let prev = read_state();
+if (prev && prev.running && pid_alive(prev.pid)) {
+	log('update already running, exiting');
+	exit(0);
+}
+
+let started = time();
+
+// ucode has no getpid() builtin; /proc/self is a symlink to our own PID.
+let own_pid = null;
+try {
+	let link = readlink('/proc/self');
+	if (link && match(link, /^[0-9]+$/))
+		own_pid = int(link);
+}
+catch (e) { }
+
+let state = {
+	running: true,
+	pid: own_pid,
+	started: started,
+	files: files,
+	results: {}
+};
+write_state(state);
+log('update started (' + join(', ', files) + ')');
+
+// Resolve URLs from UCI configuration.
+let c = cursor();
+c.load('geodata');
+let source = c.get('geodata', 'config', 'source') || 'loyalsoldier';
+let custom_geoip = c.get('geodata', 'config', 'custom_geoip_url') || '';
+let custom_geosite = c.get('geodata', 'config', 'custom_geosite_url') || '';
+c.unload();
+
+let resolved = resolve_urls(source, custom_geoip, custom_geosite);
+let all_ok = true;
+
+for (let name in files) {
+	let target = (name == 'geoip') ? GEOIP_PATH : GEOSITE_PATH;
+	let tmp = target + '.tmp';
+	let result = { ok: false, url: resolved.urls[name] || null };
+
+	if (resolved.error || !result.url) {
+		result.error = resolved.error || 'url_invalid';
+		state.results[name] = result;
+		all_ok = false;
+		log(name + ': no valid URL configured');
+		continue;
+	}
+
+	// Remove stale temporary file, then download.
+	unlink(tmp);
+	let rc = system([
+		'/bin/uclient-fetch', '-q',
+		'-T', '' + FETCH_NET_TIMEOUT_S,
+		'-O', tmp,
+		result.url
+	], DOWNLOAD_TIMEOUT_MS);
+
+	if (rc != 0) {
+		result.error = 'download_failed';
+		result.detail = 'exit code ' + rc;
+		unlink(tmp);
+		state.results[name] = result;
+		all_ok = false;
+		log(name + ': download failed (exit code ' + rc + ')');
+		continue;
+	}
+
+	let check = sanity_check(tmp);
+	if (!check.ok) {
+		result.error = 'sanity_failed';
+		result.detail = check.reason;
+		unlink(tmp);
+		state.results[name] = result;
+		all_ok = false;
+		log(name + ': sanity check failed (' + check.reason + ')');
+		continue;
+	}
+
+	let hash = sha256_file(tmp);
+	if (!hash) {
+		result.error = 'hash_failed';
+		unlink(tmp);
+		state.results[name] = result;
+		all_ok = false;
+		log(name + ': sha256 computation failed');
+		continue;
+	}
+
+	// Atomic replacement: tmp file lives in the same directory/filesystem.
+	if (!rename(tmp, target)) {
+		result.error = 'install_failed';
+		unlink(tmp);
+		state.results[name] = result;
+		all_ok = false;
+		log(name + ': atomic install (rename) failed');
+		continue;
+	}
+
+	let st = stat(target);
+	result = {
+		ok: true,
+		url: result.url,
+		size: st ? st.size : 0,
+		mtime: st ? st.mtime : time(),
+		sha256: hash,
+		first_code: check.code
+	};
+	cache_hash(target, result.size, result.mtime, hash);
+	state.results[name] = result;
+	log(name + ': updated, sha256 ' + hash);
+}
+
+// Restart xray_core only when it is running. Do not start a stopped service
+// even if it is enabled (safe-defaults: transparent proxies stay off until
+// the user turns them on).
+let xr = xray_state();
+let restarted = false;
+if (xr.running) {
+	restarted = (system([ '/etc/init.d/xray_core', 'restart' ], 120000) == 0);
+	log('xray_core restart ' + (restarted ? 'ok' : 'failed'));
+}
+else if (xr.enabled) {
+	log('xray_core enabled but not running, not starting it');
+}
+
+state.running = false;
+state.finished = time();
+state.xray = xr;
+state.xray_restarted = restarted;
+write_state(state);
+
+log('update finished (' + (all_ok ? 'ok' : 'with errors') + ')');
+exit(all_ok ? 0 : 1);

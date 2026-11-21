@@ -1,0 +1,37 @@
+{
+	"luci-app-geodata": {
+		"description": "Grant UCI and RPC access to LuCI geodata manager",
+		"read": {
+			"ubus": {
+				"luci.geodata": [
+					"status"
+				],
+				"service": [
+					"list"
+				]
+			},
+			"uci": [
+				"geodata"
+			],
+			"file": {
+				"/etc/init.d/xray_core": [
+					"exec"
+				],
+				"/etc/init.d/cron": [
+					"exec"
+				]
+			}
+		},
+		"write": {
+			"uci": [
+				"geodata"
+			],
+			"ubus": {
+				"luci.geodata": [
+					"update",
+					"sync_cron"
+				]
+			}
+		}
+	}
+}

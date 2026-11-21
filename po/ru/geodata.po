@@ -1,0 +1,365 @@
+# Russian translation for luci-app-geodata.
+# This file is distributed under the same license as the luci-app-geodata package.
+# Copyright (C) 2026 IncubusRK
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: luci-app-geodata\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-21 23:46+0300\n"
+"PO-Revision-Date: 2026-11-21 23:50+0300\n"
+"Last-Translator: IncubusRK\n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:15
+msgid "The URL must start with https:// and contain no spaces or control characters."
+msgstr "URL должен начинаться с https:// и не содержать пробелов и управляющих символов."
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:23
+msgid "Geodata settings"
+msgstr "Настройки geodata"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:24
+msgid "Source and update schedule for the xray geodata files (geoip.dat / geosite.dat) in /usr/share/v2ray/."
+msgstr "Источник и расписание обновления файлов geodata xray (geoip.dat / geosite.dat) в /usr/share/v2ray/."
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:26
+msgid "General"
+msgstr "Общие"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:30 htdocs/luci-static/resources/view/geodata/status.js:272
+msgid "Geodata source"
+msgstr "Источник geodata"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:31
+msgid "Loyalsoldier is the recommended default: it contains all required codes (including TELEGRAM) and keeps xray at about 250 MB of RAM. The runetfreedom geosite.dat is about 89 MB and makes xray use about 1.3 GB of RAM. v2fly geoip.dat lacks the TELEGRAM code, which breaks xray configurations using geoip:telegram (EOF error). Custom URLs must use HTTPS."
+msgstr "Loyalsoldier — рекомендуемый вариант по умолчанию: он содержит все необходимые коды (включая TELEGRAM), а xray занимает около 250 МБ ОЗУ. geosite.dat от runetfreedom занимает около 89 МБ, и xray с ним использует около 1,3 ГБ ОЗУ. В geoip.dat от v2fly нет кода TELEGRAM, из-за чего конфигурации xray с geoip:telegram не запускаются (ошибка EOF). Пользовательские URL должны использовать HTTPS."
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:35 htdocs/luci-static/resources/view/geodata/status.js:23
+msgid "Custom URLs"
+msgstr "Пользовательские URL"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:39
+msgid "Custom geoip.dat URL"
+msgstr "URL пользовательского geoip.dat"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:40
+msgid "HTTPS URL of a custom geoip.dat file."
+msgstr "HTTPS-URL пользовательского файла geoip.dat."
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:45
+msgid "Custom geosite.dat URL"
+msgstr "URL пользовательского geosite.dat"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:46
+msgid "HTTPS URL of a custom geosite.dat file. For the v2fly domain-list-community this is dlc.dat; it will be installed as geosite.dat."
+msgstr "HTTPS-URL пользовательского файла geosite.dat. Для v2fly domain-list-community это dlc.dat; он будет установлен как geosite.dat."
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:51 htdocs/luci-static/resources/view/geodata/status.js:302
+msgid "Automatic updates"
+msgstr "Автоматические обновления"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:52
+msgid "Download and install geodata updates on a schedule (a cron job in /etc/crontabs/root). Disabled by default."
+msgstr "Скачивать и устанавливать обновления geodata по расписанию (задание cron в /etc/crontabs/root). По умолчанию выключено."
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:56
+msgid "Schedule"
+msgstr "Расписание"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:57
+msgid "How often the automatic update should run."
+msgstr "Как часто выполнять автоматическое обновление."
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:58
+msgid "Daily"
+msgstr "Ежедневно"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:59
+msgid "Weekly"
+msgstr "Еженедельно"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:64
+msgid "Hour (0-23)"
+msgstr "Час (0-23)"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:65
+msgid "Hour of day for the scheduled update (router local time)."
+msgstr "Час суток для обновления по расписанию (местное время роутера)."
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:71
+msgid "Minute (0-59)"
+msgstr "Минута (0-59)"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:72
+msgid "Minute of the hour for the scheduled update."
+msgstr "Минута часа для обновления по расписанию."
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:78
+msgid "Day of week"
+msgstr "День недели"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:79
+msgid "Day of week for the weekly schedule."
+msgstr "День недели для еженедельного расписания."
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:80
+msgid "Sunday"
+msgstr "Воскресенье"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:81
+msgid "Monday"
+msgstr "Понедельник"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:82
+msgid "Tuesday"
+msgstr "Вторник"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:83
+msgid "Wednesday"
+msgstr "Среда"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:84
+msgid "Thursday"
+msgstr "Четверг"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:85
+msgid "Friday"
+msgstr "Пятница"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:86
+msgid "Saturday"
+msgstr "Суббота"
+
+#: htdocs/luci-static/resources/view/geodata/settings.js:107 htdocs/luci-static/resources/view/geodata/settings.js:109
+msgid "Failed to update the cron schedule: "
+msgstr "Не удалось обновить расписание cron: "
+
+#: htdocs/luci-static/resources/view/geodata/status.js:44
+msgid "unknown"
+msgstr "неизвестно"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:53
+msgid "An update is already running."
+msgstr "Обновление уже выполняется."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:54
+msgid "Invalid file selection."
+msgstr "Неверный выбор файлов."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:55
+msgid "The update worker is missing or not executable."
+msgstr "Программа обновления отсутствует или не исполняема."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:56
+msgid "Failed to start the update worker."
+msgstr "Не удалось запустить программу обновления."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:57
+msgid "The update worker terminated unexpectedly."
+msgstr "Программа обновления неожиданно завершилась."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:58
+msgid "Download failed"
+msgstr "Ошибка скачивания"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:59
+msgid "The file does not look like a valid geodata protobuf"
+msgstr "Файл не похож на корректный protobuf geodata"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:60
+msgid "Failed to install the file (atomic rename failed)."
+msgstr "Не удалось установить файл (атомарное переименование не выполнено)."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:61
+msgid "Failed to compute SHA-256."
+msgstr "Не удалось вычислить SHA-256."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:62
+msgid "No valid download URL is configured."
+msgstr "Не задан корректный URL для скачивания."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:63
+msgid "The custom geoip.dat URL is invalid (HTTPS is required)."
+msgstr "URL пользовательского geoip.dat некорректен (требуется HTTPS)."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:64
+msgid "The custom geosite.dat URL is invalid (HTTPS is required)."
+msgstr "URL пользовательского geosite.dat некорректен (требуется HTTPS)."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:65
+msgid "Unknown geodata source."
+msgstr "Неизвестный источник geodata."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:66
+msgid "Failed to write the crontab."
+msgstr "Не удалось записать crontab."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:77
+msgid "Warning: the runetfreedom geosite.dat is about 89 MB. Xray with this file uses about 1.3 GB of RAM. The Loyalsoldier geosite.dat (about 11.5 MB) keeps xray at about 250 MB of RAM."
+msgstr "Внимание: geosite.dat от runetfreedom занимает около 89 МБ. Xray с этим файлом использует около 1,3 ГБ ОЗУ. geosite.dat от Loyalsoldier (около 11,5 МБ) удерживает xray в пределах примерно 250 МБ ОЗУ."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:79
+msgid "Warning: v2fly geoip.dat does not contain the TELEGRAM code. Xray configurations using geoip:telegram will fail to start (EOF error). Use Loyalsoldier or runetfreedom instead."
+msgstr "Внимание: в geoip.dat от v2fly нет кода TELEGRAM. Конфигурации xray с geoip:telegram не запускаются (ошибка EOF). Используйте Loyalsoldier или runetfreedom."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:81
+msgid "Custom source: only HTTPS URLs are allowed. Downloaded files are checked for a valid geodata protobuf structure before installation."
+msgstr "Пользовательский источник: разрешены только HTTPS-URL. Скачанные файлы перед установкой проверяются на корректную структуру protobuf geodata."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:91 htdocs/luci-static/resources/view/geodata/status.js:97
+msgid "Failed to start the update: "
+msgstr "Не удалось запустить обновление: "
+
+#: htdocs/luci-static/resources/view/geodata/status.js:94
+msgid "Update started. This may take a few minutes."
+msgstr "Обновление запущено. Это может занять несколько минут."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:138
+msgid "Update finished successfully."
+msgstr "Обновление успешно завершено."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:138
+msgid "Update finished with errors."
+msgstr "Обновление завершено с ошибками."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:141 htdocs/luci-static/resources/view/geodata/status.js:245
+msgid "xray_core was restarted."
+msgstr "xray_core перезапущен."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:142 htdocs/luci-static/resources/view/geodata/status.js:246
+msgid "xray_core was not restarted (it is not running)."
+msgstr "xray_core не перезапущен (служба не запущена)."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:150 htdocs/luci-static/resources/view/geodata/status.js:218
+msgid "File"
+msgstr "Файл"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:151
+msgid "Size"
+msgstr "Размер"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:152
+msgid "Modified"
+msgstr "Изменён"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:153 htdocs/luci-static/resources/view/geodata/status.js:220
+msgid "SHA-256"
+msgstr "SHA-256"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:162
+msgid "Not installed"
+msgstr "Не установлен"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:171
+msgid "Update"
+msgstr "Обновить"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:184
+msgid "Update job"
+msgstr "Задание обновления"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:190
+msgid "Update all"
+msgstr "Обновить всё"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:196
+msgid "Refresh"
+msgstr "Обновить статус"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:202
+msgid "No updates have been run yet."
+msgstr "Обновления ещё не запускались."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:209
+msgid "Update in progress…"
+msgstr "Обновление выполняется…"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:210 htdocs/luci-static/resources/view/geodata/status.js:240
+msgid "started"
+msgstr "начало"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:219
+msgid "Result"
+msgstr "Результат"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:229
+msgid "OK"
+msgstr "OK"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:238
+msgid "Last update"
+msgstr "Последнее обновление"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:241
+msgid "finished"
+msgstr "завершение"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:256
+msgid "Manage the xray geodata files geoip.dat and geosite.dat in /usr/share/v2ray/: choose a source, download updates and view file status."
+msgstr "Управление файлами geodata xray geoip.dat и geosite.dat в /usr/share/v2ray/: выбор источника, скачивание обновлений и просмотр состояния файлов."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:266
+msgid "Files"
+msgstr "Файлы"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:276
+msgid "Change source"
+msgstr "Изменить источник"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:278
+msgid "Download URLs:"
+msgstr "URL для скачивания:"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:287
+msgid "Service status"
+msgstr "Состояние службы"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:290
+msgid "installed"
+msgstr "установлен"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:290
+msgid "not installed"
+msgstr "не установлен"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:291
+msgid "enabled"
+msgstr "включён"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:291
+msgid "disabled"
+msgstr "выключен"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:292
+msgid "running"
+msgstr "запущен"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:292
+msgid "stopped"
+msgstr "остановлен"
+
+#: htdocs/luci-static/resources/view/geodata/status.js:295
+msgid "xray_core is restarted automatically after an update only if it is running. An enabled but stopped service is not started."
+msgstr "xray_core перезапускается после обновления автоматически, только если он запущен. Включённая, но остановленная служба не запускается."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:297
+msgid "If you use OpenClash, note that it keeps its own geodata copies; update them separately in the OpenClash settings."
+msgstr "Если вы используете OpenClash, учтите, что он хранит собственные копии geodata; обновляйте их отдельно в настройках OpenClash."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:304
+msgid "Scheduled (cron): "
+msgstr "По расписанию (cron): "
+
+#: htdocs/luci-static/resources/view/geodata/status.js:305
+msgid "Not scheduled. Enable automatic updates on the Settings page."
+msgstr "Обновление по расписанию не настроено. Включите автоматические обновления на странице «Настройки»."
+
+#: htdocs/luci-static/resources/view/geodata/status.js:308
+msgid "The cron daemon is not running; enable the cron service for scheduled updates."
+msgstr "Служба cron не запущена; включите её для обновлений по расписанию."
