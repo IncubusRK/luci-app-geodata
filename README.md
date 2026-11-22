@@ -1,204 +1,137 @@
 # luci-app-geodata
 
-LuCI-приложение для управления файлами геоданных Xray (`geoip.dat` и
-`geosite.dat`): выбор источника, скачивание обновлений с проверкой целостности,
-просмотр состояния файлов (размер, mtime, SHA-256) и автоматическое обновление
-по расписанию через cron.
+LuCI app for managing Xray geodata files (`geoip.dat` / `geosite.dat`) on a
+running OpenWrt router: pick a source, download updates with integrity checks,
+view file status, schedule automatic updates via cron.
 
-Приложение не является форком `v2ray-geodata`: оно не тянет данные при сборке
-прошивки, а обновляет уже установленные файлы на работающем роутере.
+**English** | [Русский](#русский)
 
-## Состав пакета
+## English
 
-| Путь | Назначение |
-| --- | --- |
-| `Makefile` | Пакет LuCI (`luci.mk`), зависимости, сборка `luci-i18n-geodata-ru` |
-| `htdocs/luci-static/resources/view/geodata/status.js` | Страница **Status**: состояние файлов, задание обновления, cron, сервис xray |
-| `htdocs/luci-static/resources/view/geodata/settings.js` | Страница **Settings**: источник, пользовательские URL, расписание |
-| `root/usr/share/rpcd/ucode/luci.geodata` | rpcd-плагин (ubus-объект `luci.geodata`): `status`, `update`, `sync_cron` |
-| `root/usr/share/geodata/common.uc` | Общий ucode-модуль: источники, валидация URL, sanity-check, sha256, состояние |
-| `root/usr/libexec/geodata-update` | Отсоединяемый worker обновления (ucode) |
-| `root/usr/share/rpcd/acl.d/luci-app-geodata.json` | ACL: `read` — `status`, `write` — `update`/`sync_cron`, UCI `geodata` |
-| `root/usr/share/luci/menu.d/luci-app-geodata.json` | Меню LuCI: Services → Geodata → Status/Settings |
-| `root/etc/config/geodata` | UCI-конфигурация (conffile) |
-| `root/etc/uci-defaults/50_luci-geodata` | Сброс кэшей LuCI и reload rpcd при первой установке |
-| `po/templates/geodata.pot`, `po/ru/geodata.po` | Шаблон и русский перевод (домен `geodata`) |
-| `xgettext.sh` | Перегенерация `po/templates/geodata.pot` из JS-исходников |
+### Features
 
-Зависимости: `luci-base`, `rpcd`, `rpcd-mod-ucode`, `ucode`, `ucode-mod-fs`,
-`ucode-mod-uci`, `uclient-fetch`, `ca-bundle`.
+- **Sources**: Loyalsoldier (default, recommended), runetfreedom, v2fly, or
+  custom HTTPS URLs — with per-source warnings (RAM usage, missing `TELEGRAM`
+  code, etc.) shown in the UI.
+- **Safe updates**: detached worker (no rpcd timeout), HTTPS-only URL
+  validation, protobuf sanity check, SHA-256, atomic install via `rename()`.
+- **Status page**: file presence/size/mtime/SHA-256, update progress, xray
+  service state, cron entries.
+- **Cron schedule**: daily/weekly auto-update; only one marked crontab line is
+  managed, other entries are untouched.
+- **Safe restart**: only the *running* xray service is restarted
+  (`xray_core` or `xray` init); a stopped proxy is never started by the app.
+- Works with `xray_core` (luci-app-xray) and passwall via the canonical
+  `/usr/share/v2ray/` paths. OpenClash keeps its own geodata — update it
+  separately in OpenClash settings.
+- i18n: English source strings, full Russian translation (`luci-i18n-geodata-ru`).
 
-Для HTTPS нужен любой TLS-бэкенд `libustream-*` (`libustream-openssl` или
-`libustream-mbedtls`) — обычно уже установлен вместе с LuCI. Без него
-`uclient-fetch` не сможет скачать файлы по `https://`.
+Not a fork of `v2ray-geodata`: it updates files already installed on the
+router, it does not fetch data at firmware build time.
 
-## Источники геоданных
+### Requirements
 
-Все предустановленные источники скачиваются по HTTPS с GitHub:
+`luci-base`, `rpcd`, `rpcd-mod-ucode`, `ucode`, `ucode-mod-fs`, `ucode-mod-uci`,
+`uclient-fetch`, `ca-bundle`, plus any `libustream-*` TLS backend for HTTPS
+(usually present with LuCI).
 
-| Источник | geoip.dat | geosite.dat |
-| --- | --- | --- |
-| `loyalsoldier` (по умолчанию) | `https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat` | `.../geosite.dat` |
-| `runetfreedom` | `https://raw.githubusercontent.com/runetfreedom/russia-v2ray-rules-dat/release/geoip.dat` | `.../geosite.dat` |
-| `v2fly` | `https://github.com/v2fly/geoip/releases/latest/download/geoip.dat` | `https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat` |
+### Install
 
-Предупреждения (показываются и в UI):
-
-* **Loyalsoldier** — рекомендуемый вариант: содержит все нужные коды, включая
-  `TELEGRAM`; xray занимает около 250 МБ ОЗУ.
-* **runetfreedom** — `geosite.dat` около 89 МБ, xray с ним использует около
-  **1,3 ГБ ОЗУ**. На роутерах с 512 МБ–1 ГБ ОЗУ это может привести к OOM.
-* **v2fly** — в `geoip.dat` нет кода `TELEGRAM`. Конфигурации xray с
-  `geoip:telegram` не запускаются (ошибка `EOF`). Для `geosite.dat`
-  используется `dlc.dat` из domain-list-community, он устанавливается как
-  `geosite.dat`.
-* **custom** — произвольные HTTPS-URL. Разрешён только `https://`, без
-  userinfo (`user@host`), пробелов и управляющих символов. Скачанный файл
-  проходит проверку структуры protobuf перед установкой.
-
-## Установка
-
-### Готовая сборка (opkg, OpenWrt 23.05 и старше)
+Build in an OpenWrt tree (feeds `luci` required):
 
 ```sh
-opkg update
-opkg install ./luci-app-geodata_1.0.0-1_all.ipk
-# при необходимости русский перевод:
-opkg install ./luci-i18n-geodata-ru_*.ipk
+git clone https://github.com/IncubusRK/luci-app-geodata.git package/luci-app-geodata
+make menuconfig   # LuCI → Applications → luci-app-geodata
+make package/luci-app-geodata/compile V=s
 ```
 
-### Готовая сборка (apk, OpenWrt 24.10+ / 25.x)
+Or install a prebuilt package on the router (OpenWrt 24.10+ uses apk):
 
 ```sh
 apk add --allow-untrusted ./luci-app-geodata-1.0.0-r1.apk
-apk add --allow-untrusted ./luci-i18n-geodata-ru-*.apk
 ```
 
-После установки откройте **LuCI → Services → Geodata** (может потребоваться
-перезагрузка страницы или `service rpcd reload`).
+Menu: **Services → Geodata** (Status / Settings).
+CLI: `ubus call luci.geodata status`, `ubus call luci.geodata update '{"files":"all"}'`.
 
-### Сборка в дереве OpenWrt
+### Documentation
+
+Detailed Russian documentation (package layout, security model, troubleshooting):
+[docs/details.ru.md](docs/details.ru.md).
+
+Developed for the [IncubusRK/openwrt-bpi-r4](https://github.com/IncubusRK/openwrt-bpi-r4)
+firmware recipe (Banana Pi BPI-R4, OpenWrt main / LuCI master); verified on
+device 2026-11-22.
+
+### License
+
+GPL-2.0-or-later — see [LICENSE](LICENSE).
+
+---
+
+## Русский
+
+LuCI-приложение для управления файлами геоданных Xray (`geoip.dat` /
+`geosite.dat`) на работающем роутере OpenWrt: выбор источника, скачивание
+обновлений с проверкой целостности, статус файлов, автообновление по cron.
+
+### Возможности
+
+- **Источники**: Loyalsoldier (по умолчанию, рекомендуемый), runetfreedom,
+  v2fly или произвольные HTTPS-URL; предупреждения по каждому источнику
+  (расход ОЗУ, отсутствие кода `TELEGRAM` и т.п.) показываются в UI.
+- **Безопасное обновление**: отсоединяемый worker (без таймаута rpcd),
+  валидация URL (только HTTPS), sanity-check структуры protobuf, SHA-256,
+  атомарная установка через `rename()`.
+- **Страница Status**: наличие/размер/mtime/SHA-256 файлов, ход обновления,
+  состояние службы xray, записи cron.
+- **Расписание cron**: ежедневно/еженедельно; управляется только одна помеченная
+  строка crontab, остальные не затрагиваются.
+- **Безопасный рестарт**: перезапускается только *запущенная* служба xray
+  (`xray_core` или `xray`); остановленный прокси приложение не включает.
+- Совместимо с `xray_core` (luci-app-xray) и passwall через канонические пути
+  `/usr/share/v2ray/`. OpenClash хранит свои копии геоданных — обновляйте их
+  отдельно в настройках OpenClash.
+- Локализация: исходные строки EN, полный русский перевод (`luci-i18n-geodata-ru`).
+
+Это не форк `v2ray-geodata`: приложение обновляет уже установленные на роутере
+файлы, а не качает данные при сборке прошивки.
+
+### Зависимости
+
+`luci-base`, `rpcd`, `rpcd-mod-ucode`, `ucode`, `ucode-mod-fs`, `ucode-mod-uci`,
+`uclient-fetch`, `ca-bundle` + любой TLS-бэкенд `libustream-*` для HTTPS
+(обычно уже установлен вместе с LuCI).
+
+### Установка
+
+Сборка в дереве OpenWrt (нужен фид `luci`):
 
 ```sh
-cd openwrt
-git clone <этот-репозиторий> package/luci-app-geodata
-
-# LuCI → Applications → luci-app-geodata = M/y
-# LuCI → Translations → Russian (CONFIG_LUCI_LANG_ru) — для luci-i18n-geodata-ru
-make menuconfig
-
+git clone https://github.com/IncubusRK/luci-app-geodata.git package/luci-app-geodata
+make menuconfig   # LuCI → Applications → luci-app-geodata
 make package/luci-app-geodata/compile V=s
-# или собрать образ целиком
-make -j$(nproc)
 ```
 
-`luci-i18n-geodata-ru` создаётся только при включённом `CONFIG_LUCI_LANG_ru`
-(стандартное поведение `luci.mk`).
-
-## Использование
-
-### Status
-
-* Таблица файлов: наличие, размер, время изменения, SHA-256.
-* Кнопки **Update** для каждого файла и **Update all**.
-* Ход выполнения задания: прогресс, результат по каждому файлу, перезапуск
-  xray.
-* Состояние источника, URL скачивания, init-скриптов xray и записи cron.
-* Предупреждения выбранного источника (RAM, TELEGRAM, custom).
-
-### Settings
-
-* `source` — `loyalsoldier` / `runetfreedom` / `v2fly` / `custom`.
-* `custom_geoip_url`, `custom_geosite_url` — только при `source=custom`,
-  проверяются на клиенте и повторно на сервере.
-* `auto_update` — включить автоматические обновления (по умолчанию выключено).
-* `auto_update_mode` — `daily` или `weekly`.
-* `auto_update_hour` (0–23), `auto_update_minute` (0–59),
-  `auto_update_weekday` (0–6, только для `weekly`).
-
-После **Save & Apply** приложение перезаписывает в `/etc/crontabs/root` одну
-помеченную строку (`# luci-app-geodata`) и перезагружает cron, если служба
-включена. Остальные строки crontab не затрагиваются.
-
-Ручное обновление из консоли:
+Или готовый пакет на роутере (OpenWrt 24.10+ использует apk):
 
 ```sh
-ubus call luci.geodata status
-ubus call luci.geodata update '{"files":"all"}'
-/usr/libexec/geodata-update geosite     # напрямую, без rpcd
-logger -t geodata -p user.info "test"   # проверить syslog
+apk add --allow-untrusted ./luci-app-geodata-1.0.0-r1.apk
 ```
 
-Журнал обновлений пишется в syslog с тегом `geodata`
-(`logread -e geodata`).
+Меню: **Services → Geodata** (Status / Settings).
+Консоль: `ubus call luci.geodata status`, `ubus call luci.geodata update '{"files":"all"}'`.
 
-## Безопасность и надёжность
+### Документация
 
-* **Отсоединяемый worker.** rpcd обрывает запрос по таймауту (30 с), а
-  скачивание 89 МБ может идти минутами. Метод `update` только проверяет
-  аргументы и запускает `/usr/libexec/geodata-update` в фоне
-  (`/bin/sh -c 'exec ... &'`), сразу возвращая `{started:true}`. Прогресс
-  публикуется в `/var/run/geodata-update.json`, UI опрашивает `status`.
-  Повторный запуск блокируется: worker проверяет `running` + живой PID.
-* **Без shell-инъекций.** Все внешние команды (`uclient-fetch`, `sha256sum`,
-  `kill`, init-скрипты) вызываются через `system()`/`popen()` с **массивом
-  аргументов**, то есть через `execvp()` без `/bin/sh`. Строка шелла
-  используется только для фонового запуска с фиксированным текстом команды,
-  а выбор файла передаётся позиционным аргументом (`"$@"`).
-* **Валидация URL.** Только `https://`, ASCII без пробелов и управляющих
-  символов (в ucode регэкспы компилируются с `REG_NEWLINE`, поэтому такие
-  символы отсекаются отдельной проверкой), allowlist хостов для предустановок,
-  проверка на клиенте и на сервере.
-* **Проверка скачанного файла.** Перед установкой выполняется sanity-check
-  структуры protobuf (`GeoIPList`/`GeoSiteList`: поле 1 → длина → поле 1 →
-  код), ограничение размера 4 КБ…512 МБ, затем SHA-256.
-* **Атомарная установка.** Файл скачивается в `*.tmp` рядом с целевым и
-  переименовывается `rename()` в пределах той же ФС; частично скачанный файл
-  никогда не попадает в целевой путь.
-* **Безопасный рестарт.** Перезапускается только реально запущенная служба
-  xray — `xray_core` (luci-app-xray) или `xray` (пакет xray-core); проверяются
-  оба, рестартится тот, что running. Включённая, но остановленная служба не
-  стартует — «прозрачный прокси» не включается сам.
-* **Cron.** Значения расписания приводятся к целым в допустимых диапазонах на
-  сервере (`cron_field`), в crontab попадает только `sprintf('%d ...')`, файл
-  пишется атомарно и получает права `0600`.
+Подробная документация (состав пакета, модель безопасности, устранение
+неполадок): [docs/details.ru.md](docs/details.ru.md).
 
-## Интеграция с xray_core и OpenClash
+Разработано для рецепта прошивки
+[IncubusRK/openwrt-bpi-r4](https://github.com/IncubusRK/openwrt-bpi-r4)
+(Banana Pi BPI-R4, OpenWrt main / LuCI master); проверено на устройстве
+2026-11-22.
 
-* Канонический путь файлов — `/usr/share/v2ray/geoip.dat` и
-  `/usr/share/v2ray/geosite.dat`. Пакеты `v2ray-geodata`/`v2ray-geosite`
-  создают на них симлинки из `/usr/share/xray/`, поэтому `xray_core`
-  (luci-app-xray) и `passwall` видят обновлённые файлы без дополнительной
-  настройки. Симлинки не перезаписываются: `rename()` выполняется по пути
-  `/usr/share/v2ray/...`.
-* После успешного обновления worker перезапускает запущенную службу xray:
-  `/etc/init.d/xray_core` (luci-app-xray) или `/etc/init.d/xray` (пакет
-  `feeds/packages/net/xray-core`) — проверяются оба. Прочие init-скрипты
-  (например, `homeproxy`) приложение не трогает — перезапустите вручную.
-* **OpenClash** хранит собственные копии geodata (в своём каталоге и в
-  `clash`-формате). Обновления этого приложения их не меняют; обновляйте
-  geodata OpenClash отдельно в его настройках.
+### Лицензия
 
-## Устранение неполадок
-
-| Симптом | Что проверить |
-| --- | --- |
-| `worker_missing` | `/usr/libexec/geodata-update` существует и исполняем (`chmod +x`) |
-| `download_failed` | DNS/шлюз роутера, `uclient-fetch -O /tmp/t.dat <url>`, наличие `libustream-*` и `ca-bundle` |
-| `sanity_failed` | Источник отдал HTML/заглушку (captive portal, зеркало) или файл обрезан |
-| `already_running` | Предыдущее обновление ещё идёт; состояние: `ubus call luci.geodata status` |
-| cron не срабатывает | `/etc/init.d/cron enable && /etc/init.d/cron start`, `crontab -l` |
-| нет русского языка | установлен `luci-i18n-geodata-ru`, выбран язык в System → Language |
-
-## Разработка
-
-* Исходные строки — английские (`_('...')` в JS). Шаблон:
-  `./xgettext.sh` (нужен `xgettext`), перевод: `po/ru/geodata.po`,
-  проверка: `msgfmt --check -o /dev/null po/ru/geodata.po`.
-* Линт JS: `node --check htdocs/luci-static/resources/view/geodata/*.js`.
-* ucode-файлы можно проверить интерпретатором `ucode -c` (импортируемые
-  модули используют синтаксис `export`, а не `return {...}`).
-
-## Лицензия
-
-GPL-2.0-or-later, см. `LICENSE`.
+GPL-2.0-or-later — см. [LICENSE](LICENSE).
