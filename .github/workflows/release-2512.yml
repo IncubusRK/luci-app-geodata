@@ -140,6 +140,7 @@ jobs:
           CONFIG_LUCI_LANG_ru=y
           CONFIG_PACKAGE_luci-app-geodata=y
           CONFIG_CCACHE=y
+          CONFIG_CCACHE_DIR="/home/runner/.ccache"
           EOF
           make defconfig
           grep '^CONFIG_PACKAGE_luci-app-geodata=y' .config
