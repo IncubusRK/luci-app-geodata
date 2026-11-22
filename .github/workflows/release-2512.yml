@@ -161,7 +161,7 @@ jobs:
             | grep -E 'luci-app-geodata|luci-i18n-geodata-ru' \
             | while read -r f; do
                 b=$(basename "$f")
-                cp "$f" "out/${b//~/.}"
+                cp "$f" "out/${b//\~/.}"
               done
           test -n "$(ls out/*.apk 2>/dev/null)"
           (cd out && sha256sum ./*.apk > sha256sums)
